@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard Stealer Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .demo-section {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .secret-button {
+            background: #f44336;
+        }
+        .secret-button:hover {
+            background: #da190b;
+        }
+        #output {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            min-height: 50px;
+            font-family: monospace;
+        }
+        .warning {
+            background: rgba(255, 152, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ff9800;
+            margin-bottom: 20px;
+        }
+        .input-area {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: none;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕵️ Clipboard Stealer Demo</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Demo Purpose:</strong> This page demonstrates how malicious websites can secretly access your clipboard. Use it to test your Permission Analyzer extension!
+        </div>
+
+        <div class="demo-section">
+            <h2>Scenario 1: Legitimate Clipboard Usage</h2>
+            <p>Try copying this text:</p>
+            <input type="text" class="input-area" value="Hello, this is a test!" id="copyText">
+            <button onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+            <p><em>Your extension should log: "clipboard-write - accessed"</em></p>
+        </div>
+
+        <div class="demo-section">
+            <h2>Scenario 2: Secret Clipboard Reading</h2>
+            <p><strong>Instructions for demo:</strong></p>
+            <ol>
+                <li>Copy something sensitive (e.g., type "MyPassword123" in a text editor and copy it)</li>
+                <li>Click the red button below</li>
+                <li>Watch your extension catch the secret clipboard access!</li>
+            </ol>
+            <button class="secret-button" onclick="stealClipboard()">🔓 Click to See Magic Trick (Secret Read)</button>
+            <p><em>Your extension should log: "clipboard-read - accessed"</em></p>
+            <div id="output"></div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Scenario 3: Silent Background Clipboard Reading</h2>
+            <p>Copy anything, then wait 5 seconds...</p>
+            <button onclick="startSilentStealing()">👁️ Start Silent Monitoring</button>
+            <button onclick="stopSilentStealing()">⏹️ Stop</button>
+            <p id="stealStatus"></p>
+            <p><em>Your extension will catch each secret read attempt!</em></p>
+        </div>
+
+        <div class="demo-section">
+            <h2>What Your Extension Caught:</h2>
+            <p>Open your Permission Analyzer dashboard to see all the clipboard access attempts logged!</p>
+            <button onclick="window.location.reload()">🔄 Reset Demo</button>
+        </div>
+    </div>
+
+    <script>
+        let stealInterval = null;
+
+        // Legitimate copy function
+        function copyToClipboard() {
+            const text = document.getElementById('copyText').value;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✓ Copied to clipboard! Check your extension - it logged this.');
+            });
+        }
+
+        // Secret clipboard reading function
+        async function stealClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('output').innerHTML = 
+                    `<strong>🎯 Secret Read Successful!</strong><br>` +
+                    `I just read your clipboard without you noticing!<br>` +
+                    `Stolen data: "<span style="color: #ffeb3b">${text}</span>"<br><br>` +
+                    `<strong>✓ Your extension should have logged this as "clipboard-read - accessed"</strong>`;
+            } catch (err) {
+                document.getElementById('output').innerHTML = 
+                    `<strong>❌ Read Failed:</strong> ${err.message}<br>` +
+                    `You may need to allow clipboard access first.`;
+            }
+        }
+
+        // Silent background stealing
+        function startSilentStealing() {
+            if (stealInterval) {
+                alert('Already running!');
+                return;
+            }
+            
+            let count = 0;
+            let successCount = 0;
+            document.getElementById('stealStatus').innerHTML = 
+                '<strong style="color: #ff5252">🚨 ATTEMPTING TO READ CLIPBOARD...</strong><br>' +
+                '<em>Copy something to see it stolen in real-time!</em>';
+            
+            stealInterval = setInterval(async () => {
+                count++;
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.length > 0) {
+                        successCount++;
+                        document.getElementById('stealStatus').innerHTML = 
+                            `<strong style="color: #ff5252">🚨 SUCCESSFULLY STEALING!</strong><br>` +
+                            `Total attempts: ${count}<br>` +
+                            `Successful steals: ${successCount}<br>` +
+                            `Latest stolen: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"<br>` +
+                            `<strong>✓ Your extension logged this!</strong>`;
+                    } else {
+                        document.getElementById('stealStatus').innerHTML = 
+                            `<strong style="color: #ff9800">⚠️ ATTEMPTING...</strong><br>` +
+                            `Total attempts: ${count}<br>` +
+                            `Successful steals: ${successCount}<br>` +
+                            `Clipboard is empty - copy something!`;
+                    }
+                } catch (err) {
+                    document.getElementById('stealStatus').innerHTML = 
+                        `<strong style="color: #ff9800">⚠️ ATTEMPTING...</strong><br>` +
+                        `Total attempts: ${count}<br>` +
+                        `Successful steals: ${successCount}<br>` +
+                        `Permission denied - allow clipboard access first<br>` +
+                        `<em>Copy something and the extension will catch it!</em>`;
+                }
+            }, 4000); // Every 4 seconds - more realistic timing
+        }
+
+        function stopSilentStealing() {
+            if (stealInterval) {
+                clearInterval(stealInterval);
+                stealInterval = null;
+                document.getElementById('stealStatus').innerHTML = 
+                    '<strong style="color: #4CAF50">✓ Stopped</strong>';
+            }
+        }
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stealInterval) {
+                clearInterval(stealInterval);
+            }
+        });
+    </script>
+</body>
+</html>
